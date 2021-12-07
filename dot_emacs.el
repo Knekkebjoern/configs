@@ -5,14 +5,14 @@
 (set-fringe-mode 10)
 (menu-bar-mode -1)
 (setq visible-bell nil)
+(setq ring-bell-function 'ignore)
 (setq make-backup-files nil)
 
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
 
 (load-theme 'wombat)
 
-(if (eq system-type 'darwin)
-    (mac-auto-operator-composition-mode))
+(mac-auto-operator-composition-mode)
 
 ;; Initialize package resources
 (require 'package)
@@ -30,7 +30,7 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-(column-number-mode)
+;; (column-number-mode)
 (global-display-line-numbers-mode t)
 
 ;; Disable line numbers for some modes
@@ -121,17 +121,17 @@
   ("k" text-scale-decrease "out")
   ("f" nil "finished" :exit t))
 
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :bind-keymap
-  ("C-c p" . projectile-command-map)
-  :init
-  ;; NOTE: Set this to the folder where you keep your Git repos!
-  (when (file-directory-p "~/src")
-    (setq projectile-project-search-path '("~/src")))
-  (setq projectile-switch-project-action #'projectile-dired))
+;; (use-package projectile
+;;   :diminish projectile-mode
+;;   :config (projectile-mode)
+;;   :custom ((projectile-completion-system 'ivy))
+;;   :bind-keymap
+;;   ("C-c p" . projectile-command-map)
+;;   :init
+;;   ;; NOTE: Set this to the folder where you keep your Git repos!
+;;   (when (file-directory-p "~/src")
+;;     (setq projectile-project-search-path '("~/src")))
+;;   (setq projectile-switch-project-action #'projectile-dired))
 
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
@@ -150,20 +150,21 @@
 
 (defun efs/org-font-setup ()
   ;; Replace list hyphen with dot
-  (font-lock-add-keywords 'org-mode
-                          '(("^ *\\([-]\\) "
-                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+  ;;(font-lock-add-keywords 'org-mode
+  ;;                        '(("^ *\\([-]\\) "
+  ;;                           (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+
 
   ;; Set faces for heading levels
-  (dolist (face '((org-level-1 . 1.2)
-                  (org-level-2 . 1.1)
-                  (org-level-3 . 1.05)
-                  (org-level-4 . 1.0)
-                  (org-level-5 . 1.1)
-                  (org-level-6 . 1.1)
-                  (org-level-7 . 1.1)
-                  (org-level-8 . 1.1)))
-    (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (cdr face)))
+  (dolist (face '((org-level-1 . (1.2 . "Green"))
+                  (org-level-2 . (1.1 . "Yellow"))
+                  (org-level-3 . (1.05 . "Orange"))
+                  (org-level-4 . (1.0 . "Light Blue"))
+                  (org-level-5 . (1.1 . "Green"))
+                  (org-level-6 . (1.1 . "Yellow"))
+                  (org-level-7 . (1.1 . "Orange"))
+                  (org-level-8 . (1.1 . "Light Blue"))))
+    (set-face-attribute (car face) nil :font "Cantarell" :weight 'regular :height (car (cdr face)) :foreground (cdr (cdr face))))
 
   ;; Ensure that anything that should be fixed-pitch in Org files appears that way
   (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
@@ -174,19 +175,26 @@
   (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
   (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
+
 (use-package org
   :hook (org-mode . efs/org-mode-setup)
   :config
-  (setq org-ellipsis " ▾")
-  (setq org-agenda-files '("~/Dropbox/org-mode/Tasks.org"
-			   "~/Dropbox/org-mode/Archive.org"))
+;;  (setq org-ellipsis " ▾")
+  (setq org-agenda-files '("~/Dropbox/Hiya/Tasks.org"
+			   "~/Dropbox/Hiya/Archive.org"))
   (setq org-agenda-start-with-log-mode t)
   (setq org-log-done 'time)
   (setq org-log-into-drawer t)
 
   (setq org-todo-keywords
-    '((sequence "TODO(t)" "NEXT(n)" "IN PROGRESS(i)" "BLOCKED(b)" "|" "DONE(d!)")))
-
+	'((sequence "TODO(t)" "NEXT(n)" "IN PROGRESS(i)" "BLOCKED(b)" "|" "DONE(d!)")))
+  (setq org-todo-keyword-faces
+	'(("TODO" . "white")
+	  ("NEXT" . "blue")
+	  ("STARTED" . "yellow")
+	  ("BLOCKED" . "red")
+          ("CANCELED" . (:foreground "blue" :weight bold))))
+  
   (setq org-refile-targets
     '(("Archive.org" :maxlevel . 1)
       ("Tasks.org" :maxlevel . 1)))
@@ -200,7 +208,7 @@
 
   (setq org-capture-templates
     `(("t" "Tasks / Projects")
-      ("tt" "Task" entry (file+olp "~/Dropbox/org-mode/Tasks.org" "Inbox")
+      ("tt" "Task" entry (file+olp "~/Dropbox/Hiya/Tasks.org" "INBOX")
        "* TODO %?\n  %U\n  %i" :empty-lines 1)))
   
   (define-key global-map (kbd "C-c t")
@@ -208,25 +216,57 @@
   
   (efs/org-font-setup))
 
-(use-package org-bullets
-  :after org
-  :hook (org-mode . org-bullets-mode)
+(use-package org-roam
+  :ensure t
   :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-roam-directory (file-truename "~/Dropbox/org-roam"))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n g" . org-roam-graph)
+         ("C-c n i" . org-roam-node-insert)
+         ("C-c n c" . org-roam-capture)
+         ;; Dailies
+         ("C-c n j" . org-roam-dailies-capture-today))
+  :config
+  (org-roam-db-autosync-mode)
+  ;; If using org-roam-protocol
+  (require 'org-roam-protocol))
 
-(defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
+(setq org-roam-v2-ack t)
+(setq ivy-use-selectable-prompt t)
+;; (use-package org-bullets
+;;   :after org
+;;   :hook (org-mode . org-bullets-mode)
+;;   :custom
+;;   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-(use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
+;; (defun efs/org-mode-visual-fill ()
+;;   (setq visual-fill-column-width 100
+;;         visual-fill-column-center-text t)
+;;   (visual-fill-column-mode 1))
+
+;; (use-package visual-fill-column
+;;   :hook (org-mode . efs/org-mode-visual-fill))
+
+(use-package paredit
+  :init
+  (add-hook 'clojure-mode-hook 'paredit-mode))
 
 ;; Clojure
 (use-package clojure-mode
-  :defer t
-  :hook (clojure-mode)
-  :mode "\\.clj\\'")
+  :ensure t
+  :init
+  (defconst clojure--prettify-symbols-alist
+    '(("fn"   . ?λ)
+      ("__"   . ?⁈)))
+
+  :config
+  (add-hook 'clojure-mode-hook 'global-prettify-symbols-mode)
+  :bind (("C-c d f" . cider-code)
+         ("C-c d g" . cider-grimoire)
+         ("C-c d w" . cider-grimoire-web)
+         ("C-c d c" . clojure-cheatsheet)
+         ("C-c d d" . dash-at-point)))
 
 (use-package company
   :after lsp-mode
@@ -238,16 +278,51 @@
   :custom
   (company-minimum-prefix-length 1)
   (company-idle-delay 0.0))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(company clojure-mode visual-fill-column org-bullets magit counsel-projectile projectile hydra helpful which-key use-package rainbow-delimiters ivy-rich doom-themes doom-modeline counsel)))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+
+(defun cider-send-and-evaluate-sexp ()
+  "Sends the s-expression located before the point or the active
+  region to the REPL and evaluates it. Then the Clojure buffer is
+  activated as if nothing happened."
+  (interactive)
+  (if (not (region-active-p))
+      (cider-insert-last-sexp-in-repl)
+    (cider-insert-in-repl
+     (buffer-substring (region-beginning) (region-end)) nil))
+  (cider-switch-to-repl-buffer)
+  (cider-repl-closing-return)
+  (cider-switch-to-last-clojure-buffer)
+  (message ""))
+
+
+(use-package cider
+  :ensure t
+  :commands (cider cider-connect cider-jack-in)
+
+  :init
+  (setq cider-auto-select-error-buffer t
+        cider-repl-pop-to-buffer-on-connect nil
+        cider-repl-use-clojure-font-lock t
+        cider-repl-wrap-history t
+        cider-repl-history-size 1000
+        cider-show-error-buffer t
+        nrepl-hide-special-buffers t
+        ;; Stop error buffer from popping up while working in buffers other than the REPL:
+        nrepl-popup-stacktraces nil)
+
+  ;; (add-hook 'cider-mode-hook 'cider-turn-on-eldoc-mode)
+  (add-hook 'cider-mode-hook 'company-mode)
+
+  (add-hook 'cider-repl-mode-hook 'paredit-mode)
+  (add-hook 'cider-repl-mode-hook 'superword-mode)
+  (add-hook 'cider-repl-mode-hook 'company-mode)
+  (add-hook 'cider-test-report-mode 'jcf-soft-wrap)
+
+  :bind (:map cider-mode-map
+         ("C-c C-v C-c" . cider-send-and-evaluate-sexp)
+         ("C-c C-p"     . cider-eval-print-last-sexp)))
+
+(defun cider-append-comment ()
+  (when (null (nth 8 (syntax-ppss)))
+    (insert " ; ")))
+
+(advice-add 'cider-eval-print-last-sexp :before #'cider-append-comment)
