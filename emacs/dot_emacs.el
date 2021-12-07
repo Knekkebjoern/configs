@@ -1,8 +1,10 @@
 (setq inhibit-startup-message t)
-(scroll-bar-mode -1)
+
+(when (display-graphic-p)
+    (progn (scroll-bar-mode -1)
+	   (set-fringe-mode 10)))
 (tool-bar-mode -1)
 (tooltip-mode -1)
-(set-fringe-mode 10)
 (menu-bar-mode -1)
 (setq visible-bell nil)
 (setq ring-bell-function 'ignore)
@@ -12,7 +14,8 @@
 
 (load-theme 'wombat)
 
-(mac-auto-operator-composition-mode)
+(when (display-graphic-p)
+    (mac-auto-operator-composition-mode))
 
 ;; Initialize package resources
 (require 'package)
@@ -234,19 +237,6 @@
 
 (setq org-roam-v2-ack t)
 (setq ivy-use-selectable-prompt t)
-;; (use-package org-bullets
-;;   :after org
-;;   :hook (org-mode . org-bullets-mode)
-;;   :custom
-;;   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
-
-;; (defun efs/org-mode-visual-fill ()
-;;   (setq visual-fill-column-width 100
-;;         visual-fill-column-center-text t)
-;;   (visual-fill-column-mode 1))
-
-;; (use-package visual-fill-column
-;;   :hook (org-mode . efs/org-mode-visual-fill))
 
 (use-package paredit
   :init
